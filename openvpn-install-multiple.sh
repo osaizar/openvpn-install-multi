@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# https://github.com/Nyr/openvpn-install
-#
+# Original: https://github.com/Nyr/openvpn-install
+# Edited to support multiple instances by arguments
 # Copyright (c) 2013 Nyr. Released under the MIT License.
 
 # TODO: multiple instances IPv6 support

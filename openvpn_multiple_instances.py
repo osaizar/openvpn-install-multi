@@ -25,7 +25,7 @@ def read_instances():
 			if not re.match(r"^\s*#(.*)", l) and not l == "": # Check if comment
 				l = l.split(";")
 				l = [e.strip() for e in l]
-				instances.append({"name" : l[0], "port" : l[1], "protocol" : l[2], "network" : l[3]})
+				instances.append({"name" : l[0], "port" : l[1], "protocol" : l[2], "network" : l[3], "service" : "openvpn-server-multi@server-{}.service".format(l[0])})
 	
 	return instances
 
@@ -35,12 +35,16 @@ def append_instance(instance):
 		instance_file.write("{};{};{};{}\n".format(instance["name"], instance["port"], instance["protocol"], instance["network"]))
 
 
+def print_instances(instances):
+	print("#)\tName\tPort\t\tNetwork\t\tService")
+	for i, ins in enumerate(instances):
+		print("{})\t{}\t{}/{}\t{}\t{}".format(i+1, ins["name"], ins["port"], ins["protocol"], ins["network"], ins["service"]))
+
+
 def configure_new_instance(instances):
 	if instances:
 		print("These are the current instances: ")
-		print("Instance Name\tPort\tNetwork")
-		for i in instances:
-			print("{}\t{}/{}\t{}".format(i["name"], i["port"], i["protocol"], i["network"]))
+		print_instances(instances)
 		print("Do not overlap configurations!")
 	
 	valid_instance = False
@@ -57,7 +61,9 @@ def configure_new_instance(instances):
 			try:
 				protocol = int(input("Protocol [1]: ") or "1")
 			except:
+				print("Invalid value!")
 				protocol = False
+				continue
 
 			if protocol in [1,2]:
 				if protocol == 1:
@@ -75,7 +81,9 @@ def configure_new_instance(instances):
 			try:
 				port = int(input("Port [1194]: ") or "1194")
 			except:
+				print("Invalid value!")
 				port = False
+				continue
 
 			if port < 65535:
 				port = str(port)
@@ -90,7 +98,9 @@ def configure_new_instance(instances):
 			try:
 				network = input("Enter a network, /24 netmask will be used: ")
 			except:
+				print("Invalid value!")
 				network = False
+				continue
 			
 			network = network.strip()
 
@@ -119,6 +129,20 @@ def create_instance(instance):
 	subprocess.run(["/bin/bash", "openvpn-install-multiple.sh", instance["name"], instance["port"], instance["protocol"], instance["network"]])
 
 
+def manage_instances(instances):
+	ans = False
+	while not ans:
+		ans = input("Instance id? ")
+		try:
+			ans = int(ans)
+			selected_instance = instances[ans-1]
+		except:
+			print("Invalid value!")
+			ans = False
+			continue
+	
+	subprocess.run(["/bin/bash", "openvpn-install-multiple.sh", selected_instance["name"], selected_instance["port"], selected_instance["protocol"], selected_instance["network"]])
+
 
 if __name__ == '__main__':
 	if not os.geteuid() == 0:
@@ -127,9 +151,23 @@ if __name__ == '__main__':
 
 	instances = read_instances()
 
-	if not instances: # new install
+	if not instances: # new instance
 		create_instances_file()
 		new_instance = configure_new_instance(instances)
 		create_instance(new_instance)
-	else: # manage a install
-		pass
+	else:
+		print("Current instances:")
+		print_instances(instances)
+		ans = False
+		while not ans:
+			print("What do you need to do?")
+			print("1) Manage a instance\n2) Create a new instance")
+			ans = input("> ")
+			if ans == "1":
+				manage_instances(instances)
+			elif ans == "2":
+				new_instance = configure_new_instance(instances)
+				create_instance(new_instance)
+			else:
+				print("{} is not a valid answer!".format(ans))
+				ans = False
