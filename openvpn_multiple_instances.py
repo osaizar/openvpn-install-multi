@@ -8,6 +8,69 @@ import subprocess
 OPENVPN_BASE_CONFIG_DIR = "/etc/openvpn/"
 INSTANCES_FILE = OPENVPN_BASE_CONFIG_DIR+"instances"
 
+DEFAULT_NAME = "inst0"
+DEFAULT_PORT = "1194"
+DEFAULT_NETWORK = "10.0.0.0"
+
+def get_default_free_port(instances):
+	port = DEFAULT_PORT
+	end = False
+	while not end:
+		found = False
+		for i in instances:
+			if i["port"] == port:
+				found = True
+		if found:
+			port = str(int(port) + 1)
+		else:
+			end = True
+	
+	return str(port)
+
+
+def get_default_free_network(instances):
+	network = DEFAULT_NETWORK
+	end = False
+	while not end:
+		found = False
+		for i in instances:
+			if i["network"] == network:
+				found = True
+		if found:
+			nets = network.split(".")
+			if nets[2] != "254":
+				nets[2] = str(int(nets[2]) + 1)
+			else:
+				nets[1] = str(int(nets[1]) + 1)
+				nets[2] = "0"
+
+			network = ".".join(nets)
+		else:
+			end = True
+	
+	return network
+
+
+def get_default_free_name(instances):
+	name = DEFAULT_NAME
+	end = False
+	while not end:
+		found = False
+		for i in instances:
+			if i["name"] == name:
+				found = True
+		if found:
+			id = str(int(name[-1]) + 1)
+			name = list(name)
+			name[-1] = id
+			name = "".join(name)
+		else:
+			end = True
+	
+	return name
+
+
+
 def create_instances_file():
 	os.makedirs(OPENVPN_BASE_CONFIG_DIR, exist_ok=True)
 	with open(INSTANCES_FILE, "w") as instance_file:
@@ -50,7 +113,10 @@ def configure_new_instance(instances):
 	valid_instance = False
 
 	while not valid_instance:
-		name = input("Enter a instance name to use: ")
+		default_name = get_default_free_name(instances)
+		name = input("Enter a instance name to use [{}]: ".format(default_name))
+		if not name:
+			name = default_name
 
 		protocol = False
 		while not protocol:
@@ -77,9 +143,10 @@ def configure_new_instance(instances):
 		port = False
 		while not port:
 			print("Which port should OpenVPN use?")
+			default_port = get_default_free_port(instances)
 
 			try:
-				port = int(input("Port [1194]: ") or "1194")
+				port = int(input("Port [{}]: ".format(default_port)) or default_port)
 			except:
 				print("Invalid value!")
 				port = False
@@ -94,15 +161,19 @@ def configure_new_instance(instances):
 		network = False
 		while not network:
 			print("Which internal network should OpenVPN use?")
+			default_network = get_default_free_network(instances)
 		
 			try:
-				network = input("Enter a network, /24 netmask will be used: ")
+				network = input("Enter a network, /24 netmask will be used [{}]: ".format(default_network))
 			except:
 				print("Invalid value!")
 				network = False
 				continue
 			
 			network = network.strip()
+
+			if not network:
+				network = default_network
 
 			if not re.match(r"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$", network):
 				print("{} is not a valid IPv4 address".format(network))
