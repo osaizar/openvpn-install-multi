@@ -241,7 +241,12 @@ if __name__ == '__main__':
 		while not ans:
 			print("What do you need to do?")
 			print("1) Manage a instance\n2) Create a new instance")
-			ans = input("> ")
+			
+			try:
+				ans = input("> ")
+			except KeyboardInterrupt:
+				sys.exit()
+
 			if ans == "1":
 				manage_instances(instances)
 			elif ans == "2":
