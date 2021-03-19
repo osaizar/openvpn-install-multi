@@ -126,6 +126,8 @@ def configure_new_instance(instances):
 
 			try:
 				protocol = int(input("Protocol [1]: ") or "1")
+			except KeyboardInterrupt:
+				sys.exit()
 			except:
 				print("Invalid value!")
 				protocol = False
@@ -147,6 +149,8 @@ def configure_new_instance(instances):
 
 			try:
 				port = int(input("Port [{}]: ".format(default_port)) or default_port)
+			except KeyboardInterrupt:
+				sys.exit()
 			except:
 				print("Invalid value!")
 				port = False
@@ -165,6 +169,8 @@ def configure_new_instance(instances):
 		
 			try:
 				network = input("Enter a network, /24 netmask will be used [{}]: ".format(default_network))
+			except KeyboardInterrupt:
+				sys.exit()
 			except:
 				print("Invalid value!")
 				network = False
@@ -191,6 +197,13 @@ def configure_new_instance(instances):
 		
 		if unique:
 			valid_instance = True
+		
+		print("New instance:\n")
+		print("\t{}\t{}/{}\t{}\n".format(new_instance["name"], new_instance["port"], new_instance["protocol"], new_instance["network"]))
+		ans = input("Is this correct? [Y/n] ")
+
+		if ans.lower() == "n":
+			valid_instance = False
 	
 	return new_instance
 
@@ -207,6 +220,8 @@ def manage_instances(instances):
 		try:
 			ans = int(ans)
 			selected_instance = instances[ans-1]
+		except KeyboardInterrupt:
+			sys.exit()
 		except:
 			print("Invalid value!")
 			ans = False
@@ -221,24 +236,28 @@ if __name__ == '__main__':
 		sys.exit()
 
 	instances = read_instances()
+	try:
+		if not instances: # new instance
+			create_instances_file()
+			new_instance = configure_new_instance(instances)
+			create_instance(new_instance)
+		else:
+			print("Current instances:")
+			print_instances(instances)
+			ans = False
+			while not ans:
+				print("What do you need to do?")
+				print("1) Manage a instance\n2) Create a new instance")
 
-	if not instances: # new instance
-		create_instances_file()
-		new_instance = configure_new_instance(instances)
-		create_instance(new_instance)
-	else:
-		print("Current instances:")
-		print_instances(instances)
-		ans = False
-		while not ans:
-			print("What do you need to do?")
-			print("1) Manage a instance\n2) Create a new instance")
-			ans = input("> ")
-			if ans == "1":
-				manage_instances(instances)
-			elif ans == "2":
-				new_instance = configure_new_instance(instances)
-				create_instance(new_instance)
-			else:
-				print("{} is not a valid answer!".format(ans))
-				ans = False
+				ans = input("> ")
+
+				if ans == "1":
+					manage_instances(instances)
+				elif ans == "2":
+					new_instance = configure_new_instance(instances)
+					create_instance(new_instance)
+				else:
+					print("{} is not a valid answer!".format(ans))
+					ans = False
+	except KeyboardInterrupt:
+		sys.exit()
