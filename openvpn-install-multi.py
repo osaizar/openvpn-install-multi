@@ -197,6 +197,13 @@ def configure_new_instance(instances):
 		
 		if unique:
 			valid_instance = True
+		
+		print("New instance:\n")
+		print("\t{}\t{}/{}\t{}\n".format(new_instance["name"], new_instance["port"], new_instance["protocol"], new_instance["network"]))
+		ans = input("Is this correct? [Y/n] ")
+
+		if ans.lower() == "n":
+			valid_instance = False
 	
 	return new_instance
 
@@ -229,29 +236,28 @@ if __name__ == '__main__':
 		sys.exit()
 
 	instances = read_instances()
+	try:
+		if not instances: # new instance
+			create_instances_file()
+			new_instance = configure_new_instance(instances)
+			create_instance(new_instance)
+		else:
+			print("Current instances:")
+			print_instances(instances)
+			ans = False
+			while not ans:
+				print("What do you need to do?")
+				print("1) Manage a instance\n2) Create a new instance")
 
-	if not instances: # new instance
-		create_instances_file()
-		new_instance = configure_new_instance(instances)
-		create_instance(new_instance)
-	else:
-		print("Current instances:")
-		print_instances(instances)
-		ans = False
-		while not ans:
-			print("What do you need to do?")
-			print("1) Manage a instance\n2) Create a new instance")
-			
-			try:
 				ans = input("> ")
-			except KeyboardInterrupt:
-				sys.exit()
 
-			if ans == "1":
-				manage_instances(instances)
-			elif ans == "2":
-				new_instance = configure_new_instance(instances)
-				create_instance(new_instance)
-			else:
-				print("{} is not a valid answer!".format(ans))
-				ans = False
+				if ans == "1":
+					manage_instances(instances)
+				elif ans == "2":
+					new_instance = configure_new_instance(instances)
+					create_instance(new_instance)
+				else:
+					print("{} is not a valid answer!".format(ans))
+					ans = False
+	except KeyboardInterrupt:
+		sys.exit()
