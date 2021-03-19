@@ -22,6 +22,9 @@ port=$instance_port
 
 network=$instance_network
 
+multi_service_name="openvpn-server-multi"
+system_instance_service_name=$multi_service_name@$system_instance_name
+
 
 # Detect Debian users running the script with "sh" instead of bash
 if readlink /proc/$$/exe | grep -q "dash"; then
@@ -232,9 +235,9 @@ NOTNEEDED
 	read -n1 -r -p "Press any key to continue..."
 	# If running inside a container, disable LimitNPROC to prevent conflicts
 	if systemd-detect-virt -cq; then
-		mkdir /etc/systemd/system/openvpn-server@$system_instance_name.service.d/ 2>/dev/null
+		mkdir /etc/systemd/system/$system_instance_service_name.service.d/ 2>/dev/null
 		echo "[Service]
-LimitNPROC=infinity" > /etc/systemd/system/openvpn-server@$system_instance_name.service.d/disable-limitnproc.conf
+LimitNPROC=infinity" > /etc/systemd/system/$system_instance_service_name.service.d/disable-limitnproc.conf
 	fi
 	if [[ "$os" = "debian" || "$os" = "ubuntu" ]]; then
 		apt-get update
@@ -250,6 +253,35 @@ LimitNPROC=infinity" > /etc/systemd/system/openvpn-server@$system_instance_name.
 	if [[ "$firewall" == "firewalld" ]]; then
 		systemctl enable --now firewalld.service
 	fi
+
+	# Create openvpn-server-multi.service
+	echo "
+[Unit]
+Description=OpenVPN service for %I multiple instances supported
+After=network-online.target
+Wants=network-online.target
+Documentation=man:openvpn(8)
+Documentation=https://community.openvpn.net/openvpn/wiki/Openvpn24Man
+Documentation=https://community.openvpn.net/openvpn/wiki/HOWTO
+
+[Service]
+Type=notify
+PrivateTmp=true
+WorkingDirectory=/etc/openvpn/%i
+ExecStart=/usr/sbin/openvpn --status %t/openvpn-server/status-%i.log --status-version 2 --suppress-timestamps --config %i.conf
+CapabilityBoundingSet=CAP_IPC_LOCK CAP_NET_ADMIN CAP_NET_BIND_SERVICEW CAP_SETGID CAP_SETUID CAP_SYS_CHROOT CAP_DAC_OVERRIDE CAP_AUDIT_WRI
+LimitNPROC=10
+DeviceAllow=/dev/null rw
+DeviceAllow=/dev/net/tun rw
+ProtectSystem=true
+ProtectHome=true
+KillMode=process
+RestartSec=5s
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target" > /etc/systemd/system/$multi_service_name@.service
+
 	# Get easy-rsa
 	easy_rsa_url='https://github.com/OpenVPN/easy-rsa/releases/download/v3.0.8/EasyRSA-3.0.8.tgz'
 	mkdir -p $server_dir/easy-rsa/
@@ -442,7 +474,7 @@ ignore-unknown-option block-outside-dns
 block-outside-dns
 verb 3" > $server_dir/client-common.txt
 	# Enable and start the OpenVPN service
-	systemctl enable --now openvpn-server@$system_instance_name.service
+	systemctl enable --now $system_instance_service_name.service
 	# Generates the custom client.ovpn
 	new_client
 	echo
@@ -556,9 +588,9 @@ else
 				if sestatus 2>/dev/null | grep "Current mode" | grep -q "enforcing" && [[ "$port" != 1194 ]]; then
 					semanage port -d -t openvpn_port_t -p "$protocol" "$port"
 				fi
-				systemctl disable --now openvpn-server@$system_instance_name.service
+				systemctl disable --now $system_instance_service_name.service
 				rm -rf $server_dir
-				rm -f /etc/systemd/system/openvpn-server@$system_instance_name.service.d/disable-limitnproc.conf
+				rm -f /etc/systemd/system/$system_instance_service_name.service.d/disable-limitnproc.conf
 				# rm -f /etc/sysctl.d/30-openvpn-forward.conf # Do not disable, other instances may use it
 				if [[ "$os" = "debian" || "$os" = "ubuntu" ]]; then
 					apt-get remove --purge -y openvpn
