@@ -126,6 +126,8 @@ def configure_new_instance(instances):
 
 			try:
 				protocol = int(input("Protocol [1]: ") or "1")
+			except KeyboardInterrupt:
+				sys.exit()
 			except:
 				print("Invalid value!")
 				protocol = False
@@ -147,6 +149,8 @@ def configure_new_instance(instances):
 
 			try:
 				port = int(input("Port [{}]: ".format(default_port)) or default_port)
+			except KeyboardInterrupt:
+				sys.exit()
 			except:
 				print("Invalid value!")
 				port = False
@@ -165,6 +169,8 @@ def configure_new_instance(instances):
 		
 			try:
 				network = input("Enter a network, /24 netmask will be used [{}]: ".format(default_network))
+			except KeyboardInterrupt:
+				sys.exit()
 			except:
 				print("Invalid value!")
 				network = False
@@ -207,6 +213,8 @@ def manage_instances(instances):
 		try:
 			ans = int(ans)
 			selected_instance = instances[ans-1]
+		except KeyboardInterrupt:
+			sys.exit()
 		except:
 			print("Invalid value!")
 			ans = False
