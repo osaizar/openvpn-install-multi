@@ -197,7 +197,7 @@ def configure_new_instance(instances):
 
 def create_instance(instance):
 	append_instance(instance)
-	subprocess.run(["/bin/bash", "openvpn-install-multiple.sh", instance["name"], instance["port"], instance["protocol"], instance["network"]])
+	subprocess.run(["/bin/bash", ".openvpn-install-multi.sh", instance["name"], instance["port"], instance["protocol"], instance["network"]])
 
 
 def manage_instances(instances):
@@ -212,7 +212,7 @@ def manage_instances(instances):
 			ans = False
 			continue
 	
-	subprocess.run(["/bin/bash", "openvpn-install-multiple.sh", selected_instance["name"], selected_instance["port"], selected_instance["protocol"], selected_instance["network"]])
+	subprocess.run(["/bin/bash", ".openvpn-install-multi.sh", selected_instance["name"], selected_instance["port"], selected_instance["protocol"], selected_instance["network"]])
 
 
 if __name__ == '__main__':
