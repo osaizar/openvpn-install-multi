@@ -254,8 +254,9 @@ LimitNPROC=infinity" > /etc/systemd/system/$system_instance_service_name.service
 		systemctl enable --now firewalld.service
 	fi
 
-	# Create openvpn-server-multi.service
-	echo "
+	# Create openvpn-server-multi.service if it doesn't exist yet:
+	if [[ ! -e /etc/systemd/system/$multi_service_name@.service ]]; then
+		echo "
 [Unit]
 Description=OpenVPN service for %I multiple instances supported
 After=network-online.target
@@ -281,6 +282,7 @@ Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target" > /etc/systemd/system/$multi_service_name@.service
+	fi
 
 	# Get easy-rsa
 	easy_rsa_url='https://github.com/OpenVPN/easy-rsa/releases/download/v3.0.8/EasyRSA-3.0.8.tgz'
